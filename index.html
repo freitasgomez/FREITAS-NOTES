@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Notas Freitas">
+<title>Notas Freitas</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:auto}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;background:#020617;color:#f8fafc}
+.app{display:grid;grid-template-columns:300px 1fr;gap:12px;padding:12px}
+.side,.main{background:#0f172a;border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:14px}
+.side{position:sticky;top:12px;height:calc(100vh - 24px);display:flex;flex-direction:column;gap:10px}
+h1{margin:0;color:#f4c95d;font-size:24px} h2{margin:0 0 10px;font-size:28px} h3{margin:0 0 10px;color:#fde68a}
+p{color:#cbd5e1;font-size:14px;line-height:1.35}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+.btn{min-height:48px;border:0;border-radius:16px;background:#f4c95d;color:#111827;font-weight:900;padding:12px}
+.btn2{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.14)}
+.btnred{background:rgba(248,113,113,.18);color:#fecaca;border:1px solid rgba(248,113,113,.35)}
+input,textarea,select{width:100%;margin-top:6px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#050b18;color:#f8fafc;font-size:16px;outline:none;-webkit-user-select:text;user-select:text}
+input:focus,textarea:focus,select:focus{border-color:#f4c95d;box-shadow:0 0 0 2px rgba(244,201,93,.14)}
+textarea{min-height:110px}
+label{display:block;color:#94a3b8;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:12px;margin-bottom:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.search{background:#050b18;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px}
+.search input{border:0;margin:0;background:transparent}
+.patients{overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:0}
+.patient{text-align:left;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:10px}
+.patient.active{background:rgba(244,201,93,.16);border-color:#f4c95d}
+.patient b{display:block;font-size:15px} .patient span{display:block;color:#94a3b8;font-size:12px;margin-top:4px} .patient em{display:block;color:#cbd5e1;font-size:12px;margin-top:5px;font-style:normal}
+.category{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:10px;margin-bottom:10px}
+.trow{display:grid;grid-template-columns:44px 260px 120px 1fr;gap:8px;align-items:center;background:#020617;border:1px solid rgba(255,255,255,.11);border-radius:15px;padding:8px;margin-bottom:7px}
+.trow.on{background:rgba(244,201,93,.12);border-color:#f4c95d}
+.check{height:42px;border-radius:13px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-weight:900;font-size:18px}
+.trow.on .check{background:#f4c95d;color:#111827}
+.tname{font-weight:900;font-size:14px;line-height:1.2}
+.trow input{margin:0;padding:10px}
+.notes{display:grid;grid-template-columns:1fr 390px;gap:12px}
+pre{margin:0;white-space:pre-wrap;background:#020617;border:1px solid rgba(255,255,255,.14);border-radius:15px;padding:12px;color:#dbeafe;min-height:260px;max-height:460px;overflow:auto}
+.status{padding:10px;border-radius:14px;margin:10px 0;font-weight:900;background:#052e16;color:#bbf7d0;border:1px solid rgba(134,239,172,.35)}
+@media(max-width:900px){.app{display:block}.side{position:relative;height:auto;margin-bottom:12px}.grid,.notes{grid-template-columns:1fr}.trow{grid-template-columns:44px 1fr 120px}.trow input.note{grid-column:2/-1}}
+@media(max-width:700px){.trow{grid-template-columns:44px 1fr}.trow input{grid-column:2/-1}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <h1>Notas Freitas</h1>
+    <p>Bloc rápido para primera visita, tratamientos, dientes, notas y resumen.</p>
+    <button class="btn" id="addPatient" type="button">➕ Añadir paciente</button>
+    <div class="search"><input id="search" placeholder="Buscar paciente"></div>
+    <div id="patients" class="patients"></div>
+  </aside>
+  <main class="main">
+    <h2 id="title">Paciente</h2>
+    <div class="actions">
+      <button class="btn" id="copyBtn" type="button">📋 Copiar resumen</button>
+      <button class="btn btn2" id="txtBtn" type="button">⬇️ TXT</button>
+      <button class="btn btn2" id="backupBtn" type="button">💾 Backup</button>
+      <button class="btn btn2" id="importBtn" type="button">📥 Importar</button>
+      <button class="btn btnred" id="deleteBtn" type="button">🗑️ Borrar</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+
+    <section class="card">
+      <h3>1. Datos</h3>
+      <div class="grid">
+        <label>Nombre<input id="name"></label>
+        <label>Teléfono<input id="phone"></label>
+        <label>Fecha<input id="date" type="date"></label>
+        <label>Estado<select id="status"><option>Primera visita</option><option>Presupuesto pendiente</option><option>Aceptado</option><option>No aceptado</option><option>Revisión</option></select></label>
+        <label class="full">Motivo / objetivo<input id="reason" placeholder="Ej. quiere dientes fijos, estética anterior..."></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>2. Tratamientos</h3>
+      <p>Escribe los dientes libremente. Ejemplo: 16, 26 / 11-13 / Q1. El campo no debe saltar ni perder letras.</p>
+      <div id="treatments">
+        <div class="category"><h3>Conservadora</h3>
+
+        <div class="trow" id="row_caries_grande">
+          <button type="button" class="check" data-id="caries_grande" aria-label="Seleccionar Caries grande">+</button>
+          <div class="tname">Caries grande</div>
+          <input class="teeth" data-id="caries_grande" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="caries_grande" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_caries_pequena">
+          <button type="button" class="check" data-id="caries_pequena" aria-label="Seleccionar Caries pequeña">+</button>
+          <div class="tname">Caries pequeña</div>
+          <input class="teeth" data-id="caries_pequena" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="caries_pequena" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Cirugía</h3>
+
+        <div class="trow" id="row_extraccion_simple">
+          <button type="button" class="check" data-id="extraccion_simple" aria-label="Seleccionar Extracción simple">+</button>
+          <div class="tname">Extracción simple</div>
+          <input class="teeth" data-id="extraccion_simple" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="extraccion_simple" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_extraccion_quistectomia">
+          <button type="button" class="check" data-id="extraccion_quistectomia" aria-label="Seleccionar Extracción con quistectomía">+</button>
+          <div class="tname">Extracción con quistectomía</div>
+          <input class="teeth" data-id="extraccion_quistectomia" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="extraccion_quistectomia" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_apicectomia">
+          <button type="button" class="check" data-id="apicectomia" aria-label="Seleccionar Apicectomía">+</button>
+          <div class="tname">Apicectomía</div>
+          <input class="teeth" data-id="apicectomia" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="apicectomia" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_regularizacion_reborde">
+          <button type="button" class="check" data-id="regularizacion_reborde" aria-label="Seleccionar Regularización de reborde">+</button>
+          <div class="tname">Regularización de reborde</div>
+          <input class="teeth" data-id="regularizacion_reborde" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="regularizacion_reborde" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Cordales</h3>
+
+        <div class="trow" id="row_cordal_simple">
+          <button type="button" class="check" data-id="cordal_simple" aria-label="Seleccionar Extracción cordal simple">+</button>
+          <div class="tname">Extracción cordal simple</div>
+          <input class="teeth" data-id="cordal_simple" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="cordal_simple" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_cordal_semiincluido">
+          <button type="button" class="check" data-id="cordal_semiincluido" aria-label="Seleccionar Extracción cordal semiincluido">+</button>
+          <div class="tname">Extracción cordal semiincluido</div>
+          <input class="teeth" data-id="cordal_semiincluido" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="cordal_semiincluido" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_cordal_incluido">
+          <button type="button" class="check" data-id="cordal_incluido" aria-label="Seleccionar Extracción cordal incluido">+</button>
+          <div class="tname">Extracción cordal incluido</div>
+          <input class="teeth" data-id="cordal_incluido" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="cordal_incluido" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Endodoncia</h3>
+
+        <div class="trow" id="row_endodoncia">
+          <button type="button" class="check" data-id="endodoncia" aria-label="Seleccionar Endodoncia">+</button>
+          <div class="tname">Endodoncia</div>
+          <input class="teeth" data-id="endodoncia" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="endodoncia" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_reconstruccion_postendodoncia">
+          <button type="button" class="check" data-id="reconstruccion_postendodoncia" aria-label="Seleccionar Reconstrucción postendodoncia">+</button>
+          <div class="tname">Reconstrucción postendodoncia</div>
+          <input class="teeth" data-id="reconstruccion_postendodoncia" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="reconstruccion_postendodoncia" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Prótesis sobre diente</h3>
+
+        <div class="trow" id="row_corona_zirconio">
+          <button type="button" class="check" data-id="corona_zirconio" aria-label="Seleccionar Corona de zirconio">+</button>
+          <div class="tname">Corona de zirconio</div>
+          <input class="teeth" data-id="corona_zirconio" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="corona_zirconio" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_puente_zirconio">
+          <button type="button" class="check" data-id="puente_zirconio" aria-label="Seleccionar Puente de zirconio">+</button>
+          <div class="tname">Puente de zirconio</div>
+          <input class="teeth" data-id="puente_zirconio" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="puente_zirconio" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_corona_ceramometalica">
+          <button type="button" class="check" data-id="corona_ceramometalica" aria-label="Seleccionar Corona ceramometálica">+</button>
+          <div class="tname">Corona ceramometálica</div>
+          <input class="teeth" data-id="corona_ceramometalica" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="corona_ceramometalica" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_puente_ceramometalico">
+          <button type="button" class="check" data-id="puente_ceramometalico" aria-label="Seleccionar Puente ceramometálico">+</button>
+          <div class="tname">Puente ceramometálico</div>
+          <input class="teeth" data-id="puente_ceramometalico" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="puente_ceramometalico" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Implantes</h3>
+
+        <div class="trow" id="row_implante">
+          <button type="button" class="check" data-id="implante" aria-label="Seleccionar Implante">+</button>
+          <div class="tname">Implante</div>
+          <input class="teeth" data-id="implante" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="implante" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_corona_sobre_implante">
+          <button type="button" class="check" data-id="corona_sobre_implante" aria-label="Seleccionar Corona sobre implante">+</button>
+          <div class="tname">Corona sobre implante</div>
+          <input class="teeth" data-id="corona_sobre_implante" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="corona_sobre_implante" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Regeneración</h3>
+
+        <div class="trow" id="row_injerto_hueso">
+          <button type="button" class="check" data-id="injerto_hueso" aria-label="Seleccionar Injerto de hueso">+</button>
+          <div class="tname">Injerto de hueso</div>
+          <input class="teeth" data-id="injerto_hueso" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="injerto_hueso" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_membrana">
+          <button type="button" class="check" data-id="membrana" aria-label="Seleccionar Membrana">+</button>
+          <div class="tname">Membrana</div>
+          <input class="teeth" data-id="membrana" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="membrana" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_elevacion_seno">
+          <button type="button" class="check" data-id="elevacion_seno" aria-label="Seleccionar Elevación de seno">+</button>
+          <div class="tname">Elevación de seno</div>
+          <input class="teeth" data-id="elevacion_seno" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="elevacion_seno" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Cirugía guiada</h3>
+
+        <div class="trow" id="row_guia_1_implante">
+          <button type="button" class="check" data-id="guia_1_implante" aria-label="Seleccionar Guía quirúrgica 1 implante">+</button>
+          <div class="tname">Guía quirúrgica 1 implante</div>
+          <input class="teeth" data-id="guia_1_implante" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_1_implante" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_2_implantes">
+          <button type="button" class="check" data-id="guia_2_implantes" aria-label="Seleccionar Guía quirúrgica 2 implantes">+</button>
+          <div class="tname">Guía quirúrgica 2 implantes</div>
+          <input class="teeth" data-id="guia_2_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_2_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_3_implantes">
+          <button type="button" class="check" data-id="guia_3_implantes" aria-label="Seleccionar Guía quirúrgica 3 implantes">+</button>
+          <div class="tname">Guía quirúrgica 3 implantes</div>
+          <input class="teeth" data-id="guia_3_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_3_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_4_implantes">
+          <button type="button" class="check" data-id="guia_4_implantes" aria-label="Seleccionar Guía quirúrgica 4 implantes">+</button>
+          <div class="tname">Guía quirúrgica 4 implantes</div>
+          <input class="teeth" data-id="guia_4_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_4_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_5_implantes">
+          <button type="button" class="check" data-id="guia_5_implantes" aria-label="Seleccionar Guía quirúrgica 5 implantes">+</button>
+          <div class="tname">Guía quirúrgica 5 implantes</div>
+          <input class="teeth" data-id="guia_5_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_5_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_6_implantes">
+          <button type="button" class="check" data-id="guia_6_implantes" aria-label="Seleccionar Guía quirúrgica 6 implantes">+</button>
+          <div class="tname">Guía quirúrgica 6 implantes</div>
+          <input class="teeth" data-id="guia_6_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_6_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_7_implantes">
+          <button type="button" class="check" data-id="guia_7_implantes" aria-label="Seleccionar Guía quirúrgica 7 implantes">+</button>
+          <div class="tname">Guía quirúrgica 7 implantes</div>
+          <input class="teeth" data-id="guia_7_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_7_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_guia_8_implantes">
+          <button type="button" class="check" data-id="guia_8_implantes" aria-label="Seleccionar Guía quirúrgica 8 implantes">+</button>
+          <div class="tname">Guía quirúrgica 8 implantes</div>
+          <input class="teeth" data-id="guia_8_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="guia_8_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Carga inmediata</h3>
+
+        <div class="trow" id="row_carga_inmediata_unitaria">
+          <button type="button" class="check" data-id="carga_inmediata_unitaria" aria-label="Seleccionar Carga inmediata sobre implantes unitaria">+</button>
+          <div class="tname">Carga inmediata sobre implantes unitaria</div>
+          <input class="teeth" data-id="carga_inmediata_unitaria" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="carga_inmediata_unitaria" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_carga_inmediata_puente">
+          <button type="button" class="check" data-id="carga_inmediata_puente" aria-label="Seleccionar Carga inmediata sobre implantes puente">+</button>
+          <div class="tname">Carga inmediata sobre implantes puente</div>
+          <input class="teeth" data-id="carga_inmediata_puente" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="carga_inmediata_puente" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_carga_inmediata_completa">
+          <button type="button" class="check" data-id="carga_inmediata_completa" aria-label="Seleccionar Carga inmediata sobre implantes completa">+</button>
+          <div class="tname">Carga inmediata sobre implantes completa</div>
+          <input class="teeth" data-id="carga_inmediata_completa" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="carga_inmediata_completa" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Arcada completa</h3>
+
+        <div class="trow" id="row_all_on_4">
+          <button type="button" class="check" data-id="all_on_4" aria-label="Seleccionar All on 4">+</button>
+          <div class="tname">All on 4</div>
+          <input class="teeth" data-id="all_on_4" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="all_on_4" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_all_on_6">
+          <button type="button" class="check" data-id="all_on_6" aria-label="Seleccionar All on 6">+</button>
+          <div class="tname">All on 6</div>
+          <input class="teeth" data-id="all_on_6" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="all_on_6" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_all_on_4_carga_fija">
+          <button type="button" class="check" data-id="all_on_4_carga_fija" aria-label="Seleccionar All on 4 + carga inmediata fija">+</button>
+          <div class="tname">All on 4 + carga inmediata fija</div>
+          <input class="teeth" data-id="all_on_4_carga_fija" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="all_on_4_carga_fija" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_all_on_4_carga_removible">
+          <button type="button" class="check" data-id="all_on_4_carga_removible" aria-label="Seleccionar All on 4 + carga inmediata removible">+</button>
+          <div class="tname">All on 4 + carga inmediata removible</div>
+          <input class="teeth" data-id="all_on_4_carga_removible" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="all_on_4_carga_removible" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_all_on_6_carga_fija">
+          <button type="button" class="check" data-id="all_on_6_carga_fija" aria-label="Seleccionar All on 6 con carga inmediata fija">+</button>
+          <div class="tname">All on 6 con carga inmediata fija</div>
+          <input class="teeth" data-id="all_on_6_carga_fija" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="all_on_6_carga_fija" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_all_on_6_carga_removible">
+          <button type="button" class="check" data-id="all_on_6_carga_removible" aria-label="Seleccionar All on 6 con carga inmediata removible">+</button>
+          <div class="tname">All on 6 con carga inmediata removible</div>
+          <input class="teeth" data-id="all_on_6_carga_removible" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="all_on_6_carga_removible" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Periodoncia</h3>
+
+        <div class="trow" id="row_raspado_c1">
+          <button type="button" class="check" data-id="raspado_c1" aria-label="Seleccionar Raspado cuadrante 1">+</button>
+          <div class="tname">Raspado cuadrante 1</div>
+          <input class="teeth" data-id="raspado_c1" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="raspado_c1" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_raspado_c2">
+          <button type="button" class="check" data-id="raspado_c2" aria-label="Seleccionar Raspado cuadrante 2">+</button>
+          <div class="tname">Raspado cuadrante 2</div>
+          <input class="teeth" data-id="raspado_c2" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="raspado_c2" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_raspado_c3">
+          <button type="button" class="check" data-id="raspado_c3" aria-label="Seleccionar Raspado cuadrante 3">+</button>
+          <div class="tname">Raspado cuadrante 3</div>
+          <input class="teeth" data-id="raspado_c3" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="raspado_c3" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_raspado_c4">
+          <button type="button" class="check" data-id="raspado_c4" aria-label="Seleccionar Raspado cuadrante 4">+</button>
+          <div class="tname">Raspado cuadrante 4</div>
+          <input class="teeth" data-id="raspado_c4" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="raspado_c4" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_pack_periodontal">
+          <button type="button" class="check" data-id="pack_periodontal" aria-label="Seleccionar Pack periodontal">+</button>
+          <div class="tname">Pack periodontal</div>
+          <input class="teeth" data-id="pack_periodontal" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="pack_periodontal" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_gingivectomia">
+          <button type="button" class="check" data-id="gingivectomia" aria-label="Seleccionar Gingivectomía / remodelado gingival">+</button>
+          <div class="tname">Gingivectomía / remodelado gingival</div>
+          <input class="teeth" data-id="gingivectomia" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="gingivectomia" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_mantenimiento_periodontal">
+          <button type="button" class="check" data-id="mantenimiento_periodontal" aria-label="Seleccionar Mantenimiento periodontal">+</button>
+          <div class="tname">Mantenimiento periodontal</div>
+          <input class="teeth" data-id="mantenimiento_periodontal" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="mantenimiento_periodontal" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Estética</h3>
+
+        <div class="trow" id="row_blanqueamiento">
+          <button type="button" class="check" data-id="blanqueamiento" aria-label="Seleccionar Blanqueamiento dental">+</button>
+          <div class="tname">Blanqueamiento dental</div>
+          <input class="teeth" data-id="blanqueamiento" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="blanqueamiento" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>ATM / Bruxismo</h3>
+
+        <div class="trow" id="row_ferula_descarga">
+          <button type="button" class="check" data-id="ferula_descarga" aria-label="Seleccionar Férula de descarga">+</button>
+          <div class="tname">Férula de descarga</div>
+          <input class="teeth" data-id="ferula_descarga" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="ferula_descarga" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Ortodoncia</h3>
+
+        <div class="trow" id="row_derivacion_ortodoncia">
+          <button type="button" class="check" data-id="derivacion_ortodoncia" aria-label="Seleccionar Derivación ortodoncia">+</button>
+          <div class="tname">Derivación ortodoncia</div>
+          <input class="teeth" data-id="derivacion_ortodoncia" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="derivacion_ortodoncia" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Diagnóstico</h3>
+
+        <div class="trow" id="row_tac_cbct">
+          <button type="button" class="check" data-id="tac_cbct" aria-label="Seleccionar TAC / CBCT">+</button>
+          <div class="tname">TAC / CBCT</div>
+          <input class="teeth" data-id="tac_cbct" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="tac_cbct" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_estudio_implantes">
+          <button type="button" class="check" data-id="estudio_implantes" aria-label="Seleccionar Estudio de implantes">+</button>
+          <div class="tname">Estudio de implantes</div>
+          <input class="teeth" data-id="estudio_implantes" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="estudio_implantes" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_escaneado_intraoral">
+          <button type="button" class="check" data-id="escaneado_intraoral" aria-label="Seleccionar Escaneado intraoral">+</button>
+          <div class="tname">Escaneado intraoral</div>
+          <input class="teeth" data-id="escaneado_intraoral" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="escaneado_intraoral" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Prótesis</h3>
+
+        <div class="trow" id="row_provisional">
+          <button type="button" class="check" data-id="provisional" aria-label="Seleccionar Provisional">+</button>
+          <div class="tname">Provisional</div>
+          <input class="teeth" data-id="provisional" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="provisional" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div class="trow" id="row_provisional_inmediato">
+          <button type="button" class="check" data-id="provisional_inmediato" aria-label="Seleccionar Provisional inmediato">+</button>
+          <div class="tname">Provisional inmediato</div>
+          <input class="teeth" data-id="provisional_inmediato" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="provisional_inmediato" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Higiene</h3>
+
+        <div class="trow" id="row_limpieza">
+          <button type="button" class="check" data-id="limpieza" aria-label="Seleccionar Limpieza dental">+</button>
+          <div class="tname">Limpieza dental</div>
+          <input class="teeth" data-id="limpieza" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="limpieza" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Seguimiento</h3>
+
+        <div class="trow" id="row_revision">
+          <button type="button" class="check" data-id="revision" aria-label="Seleccionar Revisión / control">+</button>
+          <div class="tname">Revisión / control</div>
+          <input class="teeth" data-id="revision" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="revision" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+<div class="category"><h3>Extra</h3>
+
+        <div class="trow" id="row_tratamiento_extra">
+          <button type="button" class="check" data-id="tratamiento_extra" aria-label="Seleccionar Tratamiento extra a añadir">+</button>
+          <div class="tname">Tratamiento extra a añadir</div>
+          <input class="teeth" data-id="tratamiento_extra" placeholder="Dientes" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input class="note" data-id="tratamiento_extra" placeholder="Nota opcional" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>3. Notas y resumen</h3>
+      <div class="notes">
+        <div>
+          <label>Bloc libre<textarea id="observations"></textarea></label><br>
+          <label>Financiación / presupuesto<textarea id="finance"></textarea></label><br>
+          <label>Próximo paso<textarea id="nextStep"></textarea></label>
+        </div>
+        <div>
+          <h3>Resumen automático</h3>
+          <pre id="summary"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var TREATMENTS = [{"id": "caries_grande", "name": "Caries grande", "category": "Conservadora"}, {"id": "caries_pequena", "name": "Caries pequeña", "category": "Conservadora"}, {"id": "extraccion_simple", "name": "Extracción simple", "category": "Cirugía"}, {"id": "extraccion_quistectomia", "name": "Extracción con quistectomía", "category": "Cirugía"}, {"id": "cordal_simple", "name": "Extracción cordal simple", "category": "Cordales"}, {"id": "cordal_semiincluido", "name": "Extracción cordal semiincluido", "category": "Cordales"}, {"id": "cordal_incluido", "name": "Extracción cordal incluido", "category": "Cordales"}, {"id": "endodoncia", "name": "Endodoncia", "category": "Endodoncia"}, {"id": "reconstruccion_postendodoncia", "name": "Reconstrucción postendodoncia", "category": "Endodoncia"}, {"id": "corona_zirconio", "name": "Corona de zirconio", "category": "Prótesis sobre diente"}, {"id": "puente_zirconio", "name": "Puente de zirconio", "category": "Prótesis sobre diente"}, {"id": "corona_ceramometalica", "name": "Corona ceramometálica", "category": "Prótesis sobre diente"}, {"id": "puente_ceramometalico", "name": "Puente ceramometálico", "category": "Prótesis sobre diente"}, {"id": "implante", "name": "Implante", "category": "Implantes"}, {"id": "corona_sobre_implante", "name": "Corona sobre implante", "category": "Implantes"}, {"id": "injerto_hueso", "name": "Injerto de hueso", "category": "Regeneración"}, {"id": "membrana", "name": "Membrana", "category": "Regeneración"}, {"id": "guia_1_implante", "name": "Guía quirúrgica 1 implante", "category": "Cirugía guiada"}, {"id": "guia_2_implantes", "name": "Guía quirúrgica 2 implantes", "category": "Cirugía guiada"}, {"id": "guia_3_implantes", "name": "Guía quirúrgica 3 implantes", "category": "Cirugía guiada"}, {"id": "guia_4_implantes", "name": "Guía quirúrgica 4 implantes", "category": "Cirugía guiada"}, {"id": "guia_5_implantes", "name": "Guía quirúrgica 5 implantes", "category": "Cirugía guiada"}, {"id": "guia_6_implantes", "name": "Guía quirúrgica 6 implantes", "category": "Cirugía guiada"}, {"id": "guia_7_implantes", "name": "Guía quirúrgica 7 implantes", "category": "Cirugía guiada"}, {"id": "guia_8_implantes", "name": "Guía quirúrgica 8 implantes", "category": "Cirugía guiada"}, {"id": "carga_inmediata_unitaria", "name": "Carga inmediata sobre implantes unitaria", "category": "Carga inmediata"}, {"id": "carga_inmediata_puente", "name": "Carga inmediata sobre implantes puente", "category": "Carga inmediata"}, {"id": "carga_inmediata_completa", "name": "Carga inmediata sobre implantes completa", "category": "Carga inmediata"}, {"id": "all_on_4", "name": "All on 4", "category": "Arcada completa"}, {"id": "all_on_6", "name": "All on 6", "category": "Arcada completa"}, {"id": "all_on_4_carga_fija", "name": "All on 4 + carga inmediata fija", "category": "Arcada completa"}, {"id": "all_on_4_carga_removible", "name": "All on 4 + carga inmediata removible", "category": "Arcada completa"}, {"id": "all_on_6_carga_fija", "name": "All on 6 con carga inmediata fija", "category": "Arcada completa"}, {"id": "all_on_6_carga_removible", "name": "All on 6 con carga inmediata removible", "category": "Arcada completa"}, {"id": "raspado_c1", "name": "Raspado cuadrante 1", "category": "Periodoncia"}, {"id": "raspado_c2", "name": "Raspado cuadrante 2", "category": "Periodoncia"}, {"id": "raspado_c3", "name": "Raspado cuadrante 3", "category": "Periodoncia"}, {"id": "raspado_c4", "name": "Raspado cuadrante 4", "category": "Periodoncia"}, {"id": "pack_periodontal", "name": "Pack periodontal", "category": "Periodoncia"}, {"id": "blanqueamiento", "name": "Blanqueamiento dental", "category": "Estética"}, {"id": "ferula_descarga", "name": "Férula de descarga", "category": "ATM / Bruxismo"}, {"id": "derivacion_ortodoncia", "name": "Derivación ortodoncia", "category": "Ortodoncia"}, {"id": "apicectomia", "name": "Apicectomía", "category": "Cirugía"}, {"id": "tac_cbct", "name": "TAC / CBCT", "category": "Diagnóstico"}, {"id": "estudio_implantes", "name": "Estudio de implantes", "category": "Diagnóstico"}, {"id": "escaneado_intraoral", "name": "Escaneado intraoral", "category": "Diagnóstico"}, {"id": "provisional", "name": "Provisional", "category": "Prótesis"}, {"id": "provisional_inmediato", "name": "Provisional inmediato", "category": "Prótesis"}, {"id": "elevacion_seno", "name": "Elevación de seno", "category": "Regeneración"}, {"id": "regularizacion_reborde", "name": "Regularización de reborde", "category": "Cirugía"}, {"id": "gingivectomia", "name": "Gingivectomía / remodelado gingival", "category": "Periodoncia"}, {"id": "mantenimiento_periodontal", "name": "Mantenimiento periodontal", "category": "Periodoncia"}, {"id": "limpieza", "name": "Limpieza dental", "category": "Higiene"}, {"id": "revision", "name": "Revisión / control", "category": "Seguimiento"}, {"id": "tratamiento_extra", "name": "Tratamiento extra a añadir", "category": "Extra"}];
+  var KEY = "freitas_notas_ipad_v4";
+  var state = load();
+  var saveTimer = null;
+
+  function byId(id){ return document.getElementById(id); }
+  function today(){ var d=new Date(); return d.toISOString().slice(0,10); }
+  function uid(){ return "p" + Math.random().toString(36).substr(2) + Date.now(); }
+  function makePatient(){ return {id:uid(),name:"Paciente sin nombre",phone:"",date:today(),status:"Primera visita",reason:"",observations:"",finance:"",nextStep:"",treatments:{},updatedAt:Date.now()}; }
+  function load(){
+    try{ var raw=localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
+    var p=makePatient(); p.name="Paciente ejemplo"; p.reason="Valoración inicial"; p.treatments.implante={on:true,teeth:"16, 26",note:"Valorar hueso y guía quirúrgica."};
+    return {patients:[p],selectedId:p.id};
+  }
+  function saveNow(){ try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} }
+  function saveSoon(){ if(saveTimer) clearTimeout(saveTimer); saveTimer=setTimeout(saveNow,250); }
+  function selected(){ for(var i=0;i<state.patients.length;i++){ if(state.patients[i].id===state.selectedId) return state.patients[i]; } return state.patients[0]; }
+  function esc(s){ return String(s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+
+  function init(){
+    byId("addPatient").onclick = addPatient;
+    byId("copyBtn").onclick = copySummary;
+    byId("txtBtn").onclick = downloadTxt;
+    byId("backupBtn").onclick = backup;
+    byId("importBtn").onclick = function(){ byId("importFile").click(); };
+    byId("importFile").onchange = importBackup;
+    byId("deleteBtn").onclick = deletePatient;
+    byId("search").oninput = renderPatients;
+
+    var fields = ["name","phone","date","status","reason","observations","finance","nextStep"];
+    for(var i=0;i<fields.length;i++) bindField(fields[i]);
+
+    var checks = document.getElementsByClassName("check");
+    for(var c=0;c<checks.length;c++) checks[c].onclick = function(ev){ if(ev) ev.preventDefault(); toggle(this.getAttribute("data-id")); };
+
+    var teeth = document.getElementsByClassName("teeth");
+    for(var t=0;t<teeth.length;t++) bindTreatmentInput(teeth[t], "teeth");
+
+    var notes = document.getElementsByClassName("note");
+    for(var n=0;n<notes.length;n++) bindTreatmentInput(notes[n], "note");
+
+    renderAll();
+  }
+
+  function bindField(id){
+    var el = byId(id);
+    el.oninput = function(){ setField(id,this.value); };
+    el.onchange = function(){ setField(id,this.value); };
+  }
+
+  function bindTreatmentInput(el, key){
+    el.onkeydown = function(ev){ ev.stopPropagation(); };
+    el.onkeyup = function(ev){ ev.stopPropagation(); };
+    el.onkeypress = function(ev){ ev.stopPropagation(); };
+    el.oninput = function(ev){
+      if(ev) ev.stopPropagation();
+      setTNoRender(this.getAttribute("data-id"), key, this.value);
+    };
+    el.onchange = function(){
+      setTNoRender(this.getAttribute("data-id"), key, this.value);
+    };
+  }
+
+  function renderAll(){ renderPatients(); renderPatient(); renderTreatmentsFromState(); renderSummary(); }
+
+  function renderPatients(){
+    var q=(byId("search").value||"").toLowerCase();
+    var html="";
+    for(var i=0;i<state.patients.length;i++){
+      var p=state.patients[i];
+      if(q && (p.name+" "+p.phone+" "+p.reason).toLowerCase().indexOf(q)===-1) continue;
+      html += '<button type="button" class="patient '+(p.id===state.selectedId?'active':'')+'" data-id="'+p.id+'"><b>'+esc(p.name)+'</b><span>'+esc(p.date)+' · '+esc(p.status)+'</span><em>'+esc(p.reason)+'</em></button>';
+    }
+    byId("patients").innerHTML=html;
+    var items=byId("patients").getElementsByClassName("patient");
+    for(var j=0;j<items.length;j++) items[j].onclick=function(){ state.selectedId=this.getAttribute("data-id"); saveNow(); renderAll(); };
+  }
+
+  function renderPatient(){
+    var p=selected(); byId("title").innerHTML=esc(p.name||"Paciente");
+    var fields=["name","phone","date","status","reason","observations","finance","nextStep"];
+    for(var i=0;i<fields.length;i++){ var el=byId(fields[i]); if(el && el.value!==(p[fields[i]]||"")) el.value=p[fields[i]]||""; }
+  }
+
+  function renderTreatmentsFromState(){
+    var p=selected();
+    for(var i=0;i<TREATMENTS.length;i++){
+      var t=TREATMENTS[i], item=p.treatments[t.id]||{on:false,teeth:"",note:""};
+      setRowState(t.id, item.on||item.teeth||item.note);
+      var te=document.querySelector('input.teeth[data-id="'+t.id+'"]'); if(te && te.value!==(item.teeth||"")) te.value=item.teeth||"";
+      var no=document.querySelector('input.note[data-id="'+t.id+'"]'); if(no && no.value!==(item.note||"")) no.value=item.note||"";
+    }
+  }
+
+  function setRowState(id, isOn){
+    var row=byId("row_"+id);
+    if(row) row.className = "trow " + (isOn ? "on" : "");
+    var b=document.querySelector('button.check[data-id="'+id+'"]');
+    if(b) b.innerHTML = isOn ? "✓" : "+";
+  }
+
+  function setField(k,v){
+    var p=selected(); p[k]=v; p.updatedAt=Date.now(); saveSoon();
+    if(k==="name")byId("title").innerHTML=esc(v||"Paciente");
+    renderPatients();
+    renderSummary();
+  }
+
+  function ensure(id){
+    var p=selected();
+    if(!p.treatments[id]) p.treatments[id]={on:false,teeth:"",note:""};
+    return p.treatments[id];
+  }
+
+  function toggle(id){
+    var it=ensure(id);
+    var newOn=!(it.on||it.teeth||it.note);
+    it.on=newOn;
+    if(!newOn){ it.teeth=""; it.note=""; 
+      var te=document.querySelector('input.teeth[data-id="'+id+'"]'); if(te) te.value="";
+      var no=document.querySelector('input.note[data-id="'+id+'"]'); if(no) no.value="";
+    }
+    selected().updatedAt=Date.now();
+    setRowState(id, newOn);
+    saveNow(); renderSummary(); renderPatients();
+  }
+
+  function setTNoRender(id,key,value){
+    var it=ensure(id);
+    it[key]=value;
+    it.on = !!(it.teeth || it.note || it.on);
+    if(!it.teeth && !it.note) it.on = false;
+    selected().updatedAt=Date.now();
+    setRowState(id, it.on || it.teeth || it.note);
+    saveSoon();
+    renderSummary();
+    // No renderTreatments aquí. Así no se pierde el foco ni se borra la letra recién escrita.
+  }
+
+  function addPatient(){
+    var p=makePatient(); state.patients.unshift(p); state.selectedId=p.id; saveNow(); renderAll();
+    setTimeout(function(){ var n=byId("name"); n.focus(); n.select(); },50);
+  }
+
+  function deletePatient(){
+    var p=selected(); if(!p)return;
+    if(!confirm("¿Borrar a "+(p.name||"este paciente")+"?"))return;
+    var arr=[]; for(var i=0;i<state.patients.length;i++){ if(state.patients[i].id!==p.id) arr.push(state.patients[i]); }
+    state.patients=arr; if(!state.patients.length) state.patients.push(makePatient()); state.selectedId=state.patients[0].id; saveNow(); renderAll();
+  }
+
+  function buildSummary(p){
+    var lines=[]; lines.push("PACIENTE: "+(p.name||""));
+    if(p.phone)lines.push("TELÉFONO: "+p.phone);
+    if(p.date)lines.push("FECHA: "+p.date);
+    if(p.status)lines.push("ESTADO: "+p.status);
+    if(p.reason)lines.push("MOTIVO: "+p.reason);
+    lines.push(""); lines.push("TRATAMIENTOS / DIENTES:");
+    var any=false;
+    for(var i=0;i<TREATMENTS.length;i++){
+      var t=TREATMENTS[i], it=p.treatments[t.id];
+      if(it && (it.on||it.teeth||it.note)){
+        any=true;
+        lines.push("- "+t.name+": "+(it.teeth ? "dientes "+it.teeth : "sin dientes anotados")+(it.note ? " — "+it.note : ""));
+      }
+    }
+    if(!any) lines.push("- Sin tratamientos anotados todavía.");
+    if(p.observations){ lines.push(""); lines.push("OBSERVACIONES: "+p.observations); }
+    if(p.finance){ lines.push(""); lines.push("FINANCIACIÓN / PRESUPUESTO: "+p.finance); }
+    if(p.nextStep){ lines.push(""); lines.push("PRÓXIMO PASO: "+p.nextStep); }
+    return lines.join("\n");
+  }
+
+  function renderSummary(){ byId("summary").textContent=buildSummary(selected()); }
+
+  function copySummary(){
+    var text=buildSummary(selected());
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ alert("Resumen copiado"); }, fallbackCopy);
+    } else fallbackCopy();
+    function fallbackCopy(){
+      var a=document.createElement("textarea"); a.value=text; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.parentNode.removeChild(a); alert("Resumen copiado");
+    }
+  }
+
+  function downloadTxt(){ var p=selected(); download(new Blob([buildSummary(p)],{type:"text/plain;charset=utf-8"}), safe(p.name)+"_notas.txt"); }
+  function backup(){ saveNow(); download(new Blob([JSON.stringify(state,null,2)],{type:"application/json;charset=utf-8"}), "backup_freitas_notas_"+today()+".json"); }
+  function importBackup(ev){
+    var f=ev.target.files[0]; if(!f)return;
+    var r=new FileReader();
+    r.onload=function(){ try{ state=JSON.parse(r.result); if(!state.patients)throw new Error(); saveNow(); renderAll(); alert("Backup importado"); }catch(e){ alert("No se pudo importar"); } };
+    r.readAsText(f); ev.target.value="";
+  }
+  function download(blob,name){ var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.parentNode.removeChild(a); setTimeout(function(){URL.revokeObjectURL(url)},500); }
+  function safe(s){ return String(s||"paciente").replace(/[^\wáéíóúñüÁÉÍÓÚÑÜ-]+/g,"_").slice(0,80)||"paciente"; }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script>
+</body>
+</html>
